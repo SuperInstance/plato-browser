@@ -56,6 +56,26 @@ Every reading flows through the chain. Most die at L0 (normal range). Ambiguous 
 - All CSS/JS inline, dark theme, neon accents
 - Runs entirely in the browser
 
+## Ecosystem
+
+plato-browser is the **zero-install front door** to the PLATO Nervous System.
+
+**Where this sits:** Browser-native parallel to [concrete-token-demo](https://github.com/SuperInstance/concrete-token-demo). Uses Chrome's built-in AI (Gemini Nano) to demonstrate signal chain concepts without Rust or native builds.
+
+**How to connect it:** Open in Chrome with built-in AI enabled. For the full Rust experience, see [concrete-token-demo](https://github.com/SuperInstance/concrete-token-demo).
+
+| Repo | Role |
+|------|------|
+| [plato-nervous](https://github.com/SuperInstance/plato-nervous) | Core signal chain (mirrored in browser) |
+| [concrete-token-demo](https://github.com/SuperInstance/concrete-token-demo) | CLI sister demo with real ollama calls |
+| [plato-vision-jepa](https://github.com/SuperInstance/plato-vision-jepa) | Vision concepts → adapted for WebRTC/getUserMedia |
+| [plato-audio-jepa](https://github.com/SuperInstance/plato-audio-jepa) | Audio concepts → adapted for Web Audio API |
+| [luciddreamer-ai](https://github.com/SuperInstance/luciddreamer-ai) | Cloud-layer reactive podcast engine |
+| [openconstruct-kernel](https://github.com/SuperInstance/openconstruct-kernel) | Hardware detection (native only) |
+| [hermit-crab](https://github.com/SuperInstance/hermit-crab) | Agent migration between rooms |
+
+See [DEPENDENCIES.md](./DEPENDENCIES.md) for detailed dependency and data flow information.
+
 ## License
 
 MIT
