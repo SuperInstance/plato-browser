@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLATO Nervous System — Browser Demo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e17;--surface:#111827;--border:#1e293b;
+  --green:#22c55e;--yellow:#eab308;--red:#ef4444;
+  --cyan:#06b6d4;--purple:#a855f7;--text:#e2e8f0;--muted:#64748b;
+  --glow-green:0 0 12px rgba(34,197,94,.4);
+  --glow-yellow:0 0 12px rgba(234,179,8,.4);
+  --glow-red:0 0 12px rgba(239,68,68,.5);
+}
+body{background:var(--bg);color:var(--text);font-family:'SF Mono',Monaco,'Cascadia Code',monospace;font-size:13px;line-height:1.5;min-height:100vh;padding:12px}
+h1{font-size:1.1rem;color:var(--cyan);margin-bottom:2px}
+.subtitle{color:var(--muted);font-size:.75rem;margin-bottom:10px;font-style:italic}
+.notice{background:#1e1b4b;border:1px solid var(--purple);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:.75rem;color:#c4b5fd;display:none}
+.grid{display:grid;grid-template-columns:1fr 2fr;gap:10px;max-width:1100px;margin:0 auto}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;position:relative}
+.panel-title{color:var(--cyan);font-size:.7rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.sensors{display:grid;gap:6px}
+.sensor-row{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:rgba(255,255,255,.03)}
+.sensor-label{color:var(--muted);font-size:.75rem}
+.sensor-value{font-weight:700;font-size:.95rem}
+.sensor-value.ok{color:var(--green)}.sensor-value.warn{color:var(--yellow)}.sensor-value.crit{color:var(--red)}
+.state-bars{display:grid;gap:4px;margin-top:6px}
+.state-row{display:flex;align-items:center;gap:6px;font-size:.7rem}
+.state-label{width:60px;color:var(--muted);text-align:right}
+.bar-track{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.bar-fill.h{background:linear-gradient(90deg,var(--green),var(--cyan))}
+.bar-fill.t{background:linear-gradient(90deg,var(--yellow),var(--red))}
+.bar-fill.s{background:linear-gradient(90deg,var(--cyan),var(--purple))}
+.bar-fill.d{background:linear-gradient(90deg,var(--green),var(--yellow))}
+.state-val{width:40px;font-size:.7rem;color:var(--muted)}
+.chain{display:flex;gap:8px;align-items:stretch;margin-bottom:10px}
+.layer{flex:1;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center;transition:all .3s}
+.layer.active-green{border-color:var(--green);box-shadow:var(--glow-green)}
+.layer.active-yellow{border-color:var(--yellow);box-shadow:var(--glow-yellow)}
+.layer.active-red{border-color:var(--red);box-shadow:var(--glow-red)}
+.layer-name{font-size:.7rem;color:var(--cyan);margin-bottom:2px}
+.layer-type{font-size:.6rem;color:var(--muted)}
+.layer-pct{font-size:1.2rem;font-weight:700;margin:4px 0}
+.layer-bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-top:4px}
+.layer-bar-fill{height:100%;border-radius:3px;transition:width .5s;background:var(--cyan)}
+.arrow{color:var(--muted);font-size:1.2rem;display:flex;align-items:center}
+.transcript{background:rgba(0,0,0,.3);border-radius:6px;padding:8px;height:180px;overflow-y:auto;font-size:.7rem;line-height:1.6}
+.transcript::-webkit-scrollbar{width:4px}
+.transcript::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.line-L0{color:var(--green)}.line-L1{color:var(--cyan)}.line-L4{color:var(--red)}.line-SYS{color:var(--muted)}
+.crab{background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.2);border-radius:6px;padding:10px;margin-top:10px;max-width:1100px;margin-left:auto;margin-right:auto}
+.crab-title{color:var(--purple);font-size:.7rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.crab-sees,.crab-thinks{font-size:.75rem;margin-bottom:4px;padding-left:12px;border-left:2px solid var(--purple)}
+.crab-label{color:var(--muted);font-size:.65rem}
+.autonomy-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.75rem}
+.auto-bar{flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
+.auto-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .5s}
+.distill{display:flex;justify-content:space-between;gap:10px;font-size:.7rem;color:var(--muted);margin-top:8px}
+.controls{display:flex;gap:8px;margin-top:10px;max-width:1100px;margin-left:auto;margin-right:auto;flex-wrap:wrap;align-items:center}
+.btn{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.75rem;transition:all .2s}
+.btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn.active{background:var(--cyan);color:var(--bg);border-color:var(--cyan)}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.danger:hover{background:var(--red);color:#fff}
+.speed-group{display:flex;gap:4px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.chain{flex-direction:column}.arrow{justify-content:center;transform:rotate(90deg)}}
+</style>
+</head>
+<body>
+
+<div style="max-width:1100px;margin:0 auto">
+  <h1>🧠 PLATO Nervous System — Browser Demo</h1>
+  <div class="subtitle">"Every app is a MUD. Every MUD is a fleet."</div>
+  <div class="notice" id="notice">⚠️ Chrome's built-in AI (Gemini Nano) not available. Using rule-based fallback. Enable in <code>chrome://flags/#optimization-guide-on-device-model</code> for full experience.</div>
+</div>
+
+<div class="grid">
+  <!-- LEFT COLUMN -->
+  <div>
+    <div class="panel">
+      <div class="panel-title">⚙️ Engine Room</div>
+      <div class="sensors" id="sensors"></div>
+    </div>
+    <div class="panel" style="margin-top:10px">
+      <div class="panel-title">📊 Room State Vector</div>
+      <div class="state-bars" id="state-bars"></div>
+      <div class="autonomy-row">
+        <span style="color:var(--muted)">Autonomy:</span>
+        <div class="auto-bar"><div class="auto-fill" id="auto-fill" style="width:90%"></div></div>
+        <span id="auto-pct" style="color:var(--cyan)">90.2%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div>
+    <div class="panel">
+      <div class="panel-title">🔗 Signal Chain</div>
+      <div class="chain">
+        <div class="layer" id="layer-L0">
+          <div class="layer-name">L0</div>
+          <div class="layer-type">Deadband</div>
+          <div class="layer-pct" id="pct-L0">—</div>
+          <div class="layer-bar"><div class="layer-bar-fill" id="bar-L0" style="width:0"></div></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="layer" id="layer-L1">
+          <div class="layer-name">L1</div>
+          <div class="layer-type" id="L1-type">Nano AI</div>
+          <div class="layer-pct" id="pct-L1">—</div>
+          <div class="layer-bar"><div class="layer-bar-fill" id="bar-L1" style="width:0"></div></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="layer" id="layer-L4">
+          <div class="layer-name">L4</div>
+          <div class="layer-type">Cloud</div>
+          <div class="layer-pct" id="pct-L4">—</div>
+          <div class="layer-bar"><div class="layer-bar-fill" id="bar-L4" style="width:0"></div></div>
+        </div>
+      </div>
+      <div class="panel-title" style="margin-top:8px">📜 Transcript</div>
+      <div class="transcript" id="transcript"></div>
+      <div class="distill">
+        <span>Tiles: <strong id="tile-count">0</strong></span>
+        <span>LoRA Ready: <strong id="lora-status">No</strong></span>
+        <span>Cloud calls: <strong id="cloud-calls">0</strong>/<strong id="total-readings">0</strong> (<span id="cloud-pct">0</span>%)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="crab" id="crab-panel">
+  <div class="crab-title">🦀 The Crab's View — A2UI Projection</div>
+  <div class="crab-sees">
+    <div class="crab-label">Agent sees:</div>
+    <div id="crab-sees">Initializing engine room sensors...</div>
+  </div>
+  <div class="crab-thinks">
+    <div class="crab-label">Agent thinking:</div>
+    <div id="crab-thinks">Booting deadband filters. Awaiting first readings.</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" id="btn-start" onclick="toggleSim()">▶ Start</button>
+  <button class="btn danger" onclick="injectAnomaly()">⚡ Inject Anomaly</button>
+  <div class="speed-group">
+    <button class="btn" onclick="setSpeed(1)" id="sp1">1×</button>
+    <button class="btn" onclick="setSpeed(2)" id="sp2">2×</button>
+    <button class="btn" onclick="setSpeed(5)" id="sp5">5×</button>
+  </div>
+  <button class="btn" onclick="cloneInfo()" style="margin-left:auto">📋 Clone This Demo</button>
+</div>
+
+<script>
+// ── State ──
+let running = false, speed = 1, interval = null;
+let aiAvailable = false, aiSession = null;
+let totalReadings = 0, cloudCalls = 0, tiles = 0;
+let l0count = 0, l1count = 0, l4count = 0;
+let anomalyActive = false, anomalyTicks = 0;
+let stateVector = { health: 0.95, thermal: 0.1, stress: 0.15, drift: 0.02 };
+let recentCoolant = [];
+
+const sensors = [
+  { id: 'rpm', label: 'RPM', unit: '', min: 1400, max: 1600, nominal: 1500, warnLow: 1350, warnHigh: 1650, critLow: 1300, critHigh: 1700 },
+  { id: 'coolant', label: 'Coolant', unit: 'F', min: 185, max: 210, nominal: 195, warnLow: 180, warnHigh: 205, critLow: 170, critHigh: 220 },
+  { id: 'oil', label: 'Oil Pressure', unit: 'PSI', min: 45, max: 75, nominal: 60, warnLow: 40, warnHigh: 80, critLow: 30, critHigh: 90 },
+  { id: 'vib', label: 'Vibration', unit: 'g', min: 0.1, max: 0.5, nominal: 0.3, warnLow: 0.05, warnHigh: 0.6, critLow: 0, critHigh: 0.8 }
+];
+
+// ── Deadband ranges (Layer 0) ──
+const deadbands = {
+  rpm: { low: 1450, high: 1550 },
+  coolant: { low: 190, high: 200 },
+  oil: { low: 50, high: 70 },
+  vib: { low: 0.2, high: 0.4 }
+};
+
+// ── Init AI ──
+async function initAI() {
+  try {
+    if (typeof ai !== 'undefined' && ai.languageModel) {
+      const cap = await ai.languageModel.capabilities();
+      if (cap.available === 'readily') {
+        aiSession = await ai.languageModel.create({
+          systemPrompt: 'You are an engine room monitor. Classify sensor readings. Respond with ONLY: OK, WARN, or CRIT followed by a brief reason (under 15 words). Example: "WARN Coolant trending high, monitor closely."'
+        });
+        aiAvailable = true;
+        document.getElementById('L1-type').textContent = 'Nano AI ✨';
+        return;
+      }
+    }
+  } catch (e) { console.log('AI not available:', e); }
+  document.getElementById('notice').style.display = 'block';
+  document.getElementById('L1-type').textContent = 'Rule-based';
+}
+
+// ── Generate reading ──
+function genReading(s) {
+  const range = s.max - s.min;
+  const jitter = range * 0.15;
+  let val = s.nominal + (Math.random() - 0.5) * jitter;
+  if (anomalyActive) {
+    const factor = Math.min(anomalyTicks / 8, 1);
+    if (s.id === 'coolant') val = s.nominal + factor * 30 + Math.random() * 5;
+    if (s.id === 'oil') val = s.nominal - factor * 20 - Math.random() * 3;
+    if (s.id === 'vib') val = s.nominal + factor * 0.3 + Math.random() * 0.1;
+  }
+  val = Math.round(val * (s.id === 'vib' ? 100 : 0)) / (s.id === 'vib' ? 100 : 1);
+  return val;
+}
+
+function classify(s, val) {
+  if (val <= s.critLow || val >= s.critHigh) return 'CRIT';
+  if (val <= s.warnLow || val >= s.warnHigh) return 'WARN';
+  return 'OK';
+}
+
+// ── Layer 0: Deadband ──
+function checkDeadband(s, val) {
+  const db = deadbands[s.id];
+  return val >= db.low && val <= db.high;
+}
+
+// ── Layer 1: AI or rule-based ──
+async function classifyAI(s, val) {
+  if (aiAvailable && aiSession) {
+    try {
+      const resp = await aiSession.prompt(`${s.label}=${val}${s.unit}. OK WARN or CRIT?`);
+      const r = resp.trim().toUpperCase();
+      if (r.startsWith('CRIT')) return { level: 'CRIT', reason: resp.trim() };
+      if (r.startsWith('WARN')) return { level: 'WARN', reason: resp.trim() };
+      return { level: 'OK', reason: resp.trim() };
+    } catch (e) { /* fallback */ }
+  }
+  // Rule-based fallback
+  const c = classify(s, val);
+  const reasons = {
+    OK: `${s.label}=${val}${s.unit} within normal range`,
+    WARN: `${s.label}=${val}${s.unit} approaching limits`,
+    CRIT: `${s.label}=${val}${s.unit} exceeds critical threshold!`
+  };
+  return { level: c, reason: reasons[c] };
+}
+
+// ── Flash layer ──
+function flashLayer(id, level) {
+  const el = document.getElementById('layer-' + id);
+  const cls = level === 'CRIT' ? 'active-red' : level === 'WARN' ? 'active-yellow' : 'active-green';
+  el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), 600);
+}
+
+// ── Transcript ──
+function addLine(tag, text) {
+  const t = document.getElementById('transcript');
+  const d = document.createElement('div');
+  d.className = 'line-' + tag;
+  const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+  d.textContent = `[${ts} ${tag}] ${text}`;
+  t.appendChild(d);
+  t.scrollTop = t.scrollHeight;
+}
+
+// ── Update crab view ──
+function updateCrab(readings) {
+  const sees = readings.map(r => `${r.label}=${r.value}${r.unit} (${r.status})`).join('. ') + '.';
+  const coolantTrend = recentCoolant.length >= 3
+    ? (recentCoolant.slice(-3).reduce((a,b) => a+b, 0) / 3 - recentCoolant.slice(-6, -3).reduce((a,b) => a+b, 0) / Math.max(recentCoolant.length > 3 ? 3 : 1, 1)).toFixed(1)
+    : '0.0';
+  const conf = (0.85 + Math.random() * 0.12).toFixed(2);
+  const hasWarn = readings.some(r => r.status !== 'OK');
+
+  document.getElementById('crab-sees').textContent = sees;
+  document.getElementById('crab-thinks').textContent = hasWarn
+    ? `Deadband triggered. Escalating anomalous readings. Coolant trend: ${coolantTrend > 0 ? '+' : ''}${coolantTrend}F/period. Confidence: ${conf}.`
+    : `Deadband stable, ${aiAvailable ? 'nano confirms' : 'rules confirm'}. Watching coolant gradient (${coolantTrend > 0 ? '+' : ''}${coolantTrend}F). Autonomy holding. Confidence: ${conf}.`;
+}
+
+// ── Tick ──
+async function tick() {
+  const readings = sensors.map(s => {
+    const value = genReading(s);
+    const status = classify(s, value);
+    return { ...s, value, status };
+  });
+
+  // Track coolant for trend
+  const c = readings.find(r => r.id === 'coolant');
+  if (c) { recentCoolant.push(c.value); if (recentCoolant.length > 20) recentCoolant.shift(); }
+
+  totalReadings++;
+  tiles++;
+
+  // Update sensor display
+  const container = document.getElementById('sensors');
+  container.innerHTML = readings.map(r =>
+    `<div class="sensor-row"><span class="sensor-label">${r.label}</span><span class="sensor-value ${r.status.toLowerCase()}">${r.value}${r.unit}</span></div>`
+  ).join('');
+
+  // State vector drift
+  if (anomalyActive) {
+    stateVector.thermal = Math.min(1, stateVector.thermal + 0.04);
+    stateVector.stress = Math.min(1, stateVector.stress + 0.03);
+    stateVector.health = Math.max(0, stateVector.health - 0.03);
+  } else {
+    stateVector.thermal = Math.max(0.1, stateVector.thermal - 0.01);
+    stateVector.stress = Math.max(0.05, stateVector.stress - 0.008);
+    stateVector.health = Math.min(0.99, stateVector.health + 0.005);
+    stateVector.drift = 0.01 + Math.random() * 0.04;
+  }
+
+  document.getElementById('state-bars').innerHTML = [
+    { label: 'Health', key: 'h', val: stateVector.health },
+    { label: 'Thermal', key: 't', val: stateVector.thermal },
+    { label: 'Stress', key: 's', val: stateVector.stress },
+    { label: 'Drift', key: 'd', val: stateVector.drift }
+  ].map(s =>
+    `<div class="state-row"><span class="state-label">${s.label}</span><div class="bar-track"><div class="bar-fill ${s.key}" style="width:${(s.val * 100).toFixed(0)}%"></div></div><span class="state-val">${s.val.toFixed(2)}</span></div>`
+  ).join('');
+
+  // Process each sensor through signal chain
+  let l0hits = 0, l1hits = 0, l4hits = 0;
+  for (const r of readings) {
+    if (checkDeadband(r, r.value)) {
+      l0hits++;
+      flashLayer('L0', 'OK');
+      addLine('L0', `${r.label}=${r.value}${r.unit} normal (deadband)`);
+    } else {
+      const result = await classifyAI(r, r.value);
+      if (result.level === 'OK' || result.level === 'WARN') {
+        l1hits++;
+        flashLayer('L1', result.level);
+        addLine('L1', result.reason);
+      } else {
+        l4hits++;
+        cloudCalls++;
+        flashLayer('L4', 'CRIT');
+        addLine('L4', `🚨 ALERT: ${result.reason}`);
+      }
+    }
+  }
+
+  l0count += l0hits; l1count += l1hits; l4count += l4hits;
+  const total = l0count + l1count + l4count || 1;
+
+  document.getElementById('pct-L0').textContent = Math.round(l0count / total * 100) + '%';
+  document.getElementById('pct-L1').textContent = Math.round(l1count / total * 100) + '%';
+  document.getElementById('pct-L4').textContent = Math.round(l4count / total * 100) + '%';
+  document.getElementById('bar-L0').style.width = (l0count / total * 100) + '%';
+  document.getElementById('bar-L1').style.width = (l1count / total * 100) + '%';
+  document.getElementById('bar-L4').style.width = (l4count / total * 100) + '%';
+
+  const autoPct = ((l0count + l1count) / total * 100).toFixed(1);
+  document.getElementById('auto-fill').style.width = autoPct + '%';
+  document.getElementById('auto-pct').textContent = autoPct + '%';
+
+  document.getElementById('tile-count').textContent = tiles;
+  document.getElementById('total-readings').textContent = totalReadings;
+  document.getElementById('cloud-calls').textContent = cloudCalls;
+  document.getElementById('cloud-pct').textContent = totalReadings ? (cloudCalls / totalReadings * 100).toFixed(1) : '0';
+  document.getElementById('lora-status').textContent = tiles >= 200 ? 'Yes ✨' : `No (${tiles}/200)`;
+
+  updateCrab(readings);
+
+  // Anomaly countdown
+  if (anomalyActive) {
+    anomalyTicks++;
+    if (anomalyTicks > 20) { anomalyActive = false; anomalyTicks = 0; addLine('SYS', 'Anomaly resolved. Systems normalizing.'); }
+  }
+}
+
+// ── Controls ──
+function toggleSim() {
+  running = !running;
+  const btn = document.getElementById('btn-start');
+  if (running) {
+    btn.textContent = '⏸ Pause';
+    btn.classList.add('active');
+    addLine('SYS', 'Simulation started');
+    runLoop();
+  } else {
+    btn.textContent = '▶ Start';
+    btn.classList.remove('active');
+    clearTimeout(interval);
+    addLine('SYS', 'Simulation paused');
+  }
+}
+
+function runLoop() {
+  if (!running) return;
+  tick();
+  interval = setTimeout(runLoop, 1500 / speed);
+}
+
+function setSpeed(s) {
+  speed = s;
+  document.querySelectorAll('.speed-group .btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sp' + s).classList.add('active');
+}
+
+function injectAnomaly() {
+  anomalyActive = true;
+  anomalyTicks = 0;
+  addLine('SYS', '⚡ ANOMALY INJECTED — coolant spike + oil pressure drop + vibration increase');
+  if (running) { clearTimeout(interval); runLoop(); }
+}
+
+function cloneInfo() {
+  const txt = `Clone this demo:\n\ngit clone https://github.com/SuperInstance/plato-browser.git\ncd plato-browser\n# Open index.html in Chrome (enable chrome://flags/#optimization-guide-on-device-model for AI)`;
+  alert(txt);
+}
+
+// ── Boot ──
+setSpeed(1);
+initAI().then(() => {
+  addLine('SYS', 'PLATO Nervous System initialized');
+  addLine('SYS', aiAvailable ? '✨ Chrome AI (Gemini Nano) connected' : '📋 Rule-based fallback active');
+  // Run one tick to populate UI
+  tick();
+});
+</script>
+</body>
+</html>
